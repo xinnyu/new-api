@@ -62,6 +62,12 @@ func newAwsClient(c *gin.Context, info *relaycommon.RelayInfo) (*bedrockruntime.
 		if err != nil {
 			return nil, fmt.Errorf("new proxy http client failed: %w", err)
 		}
+	} else if constant.IsTextRelayMode(info.RelayMode) {
+		// Without this, TextRelayTimeout could only ever shrink below RelayTimeout for AWS/Bedrock
+		// (newAwsInvokeContext's context deadline would race a shorter client-level Timeout baked
+		// from RelayTimeout at boot), unlike doRequest()'s plain client path where TextRelayTimeout
+		// fully replaces RelayTimeout for text modes.
+		httpClient = service.GetTextHttpClient()
 	} else {
 		httpClient = service.GetHttpClient()
 	}
