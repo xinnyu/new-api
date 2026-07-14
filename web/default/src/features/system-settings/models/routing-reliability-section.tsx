@@ -69,6 +69,7 @@ type ChannelTestMode = (typeof channelTestModes)[number]
 const routingReliabilitySchema = z
   .object({
     RetryTimes: z.coerce.number().min(0).max(10),
+    TextRelayTimeout: z.coerce.number().int().min(0).max(3600),
     ChannelDisableThreshold: numericString,
     AutomaticDisableChannelEnabled: z.boolean(),
     AutomaticEnableChannelEnabled: z.boolean(),
@@ -118,6 +119,7 @@ type RoutingReliabilityFormInput = z.input<typeof routingReliabilitySchema>
 type RoutingReliabilitySectionProps = {
   defaultValues: {
     RetryTimes: number
+    TextRelayTimeout: number
     ChannelDisableThreshold: string
     AutomaticDisableChannelEnabled: boolean
     AutomaticEnableChannelEnabled: boolean
@@ -136,6 +138,7 @@ function normalizeLineEndings(value: string) {
 
 type NormalizedRoutingReliabilityValues = {
   RetryTimes: number
+  TextRelayTimeout: number
   ChannelDisableThreshold: string
   AutomaticDisableChannelEnabled: boolean
   AutomaticEnableChannelEnabled: boolean
@@ -155,6 +158,7 @@ const buildFormDefaults = (
   defaults: RoutingReliabilitySectionProps['defaultValues']
 ): RoutingReliabilityFormInput => ({
   RetryTimes: defaults.RetryTimes ?? 0,
+  TextRelayTimeout: defaults.TextRelayTimeout ?? 0,
   ChannelDisableThreshold: defaults.ChannelDisableThreshold ?? '',
   AutomaticDisableChannelEnabled: defaults.AutomaticDisableChannelEnabled,
   AutomaticEnableChannelEnabled: defaults.AutomaticEnableChannelEnabled,
@@ -178,6 +182,7 @@ const normalizeDefaults = (
   defaults: RoutingReliabilitySectionProps['defaultValues']
 ): NormalizedRoutingReliabilityValues => ({
   RetryTimes: defaults.RetryTimes ?? 0,
+  TextRelayTimeout: defaults.TextRelayTimeout ?? 0,
   ChannelDisableThreshold: (defaults.ChannelDisableThreshold ?? '').trim(),
   AutomaticDisableChannelEnabled: defaults.AutomaticDisableChannelEnabled,
   AutomaticEnableChannelEnabled: defaults.AutomaticEnableChannelEnabled,
@@ -203,6 +208,7 @@ const normalizeFormValues = (
   values: RoutingReliabilityFormValues
 ): NormalizedRoutingReliabilityValues => ({
   RetryTimes: values.RetryTimes,
+  TextRelayTimeout: values.TextRelayTimeout,
   ChannelDisableThreshold: values.ChannelDisableThreshold.trim(),
   AutomaticDisableChannelEnabled: values.AutomaticDisableChannelEnabled,
   AutomaticEnableChannelEnabled: values.AutomaticEnableChannelEnabled,
@@ -294,7 +300,7 @@ export function RoutingReliabilitySection({
             <div className='flex flex-col gap-1'>
               <h4 className='text-sm font-medium'>{t('Request retry')}</h4>
             </div>
-            <div className='grid min-w-0 gap-6 xl:grid-cols-[minmax(12rem,24rem)_minmax(0,1fr)]'>
+            <div className='grid min-w-0 gap-6 xl:grid-cols-[minmax(12rem,20rem)_minmax(12rem,20rem)_minmax(0,1fr)]'>
               <FormField
                 control={form.control}
                 name='RetryTimes'
@@ -311,6 +317,33 @@ export function RoutingReliabilitySection({
                     </FormControl>
                     <FormDescription>
                       {t('Number of times to retry failed requests (0-10)')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='TextRelayTimeout'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Text relay timeout (seconds)')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        min='0'
+                        max='3600'
+                        {...safeNumberFieldProps(field)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t(
+                        'Only bounds text-generation relays (chat completions, responses). Image, audio, video, and task-based relays are unaffected. 0 disables it.'
+                      )}{' '}
+                      {t(
+                        'Pair with Retry Times above to fall back to another channel when a text request times out.'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

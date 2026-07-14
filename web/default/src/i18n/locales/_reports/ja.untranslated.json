@@ -1,0 +1,5 @@
+{
+  "Only bounds text-generation relays (chat completions, responses). Image, audio, video, and task-based relays are unaffected. 0 disables it.": "Only bounds text-generation relays (chat completions, responses). Image, audio, video, and task-based relays are unaffected. 0 disables it.",
+  "Pair with Retry Times above to fall back to another channel when a text request times out.": "Pair with Retry Times above to fall back to another channel when a text request times out.",
+  "Text relay timeout (seconds)": "Text relay timeout (seconds)"
+}

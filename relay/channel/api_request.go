@@ -478,10 +478,14 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 	var client *http.Client
 	var err error
 	if info.ChannelSetting.Proxy != "" {
+		// Proxied channels always use the plain (unbounded-by-TextRelayTimeout) client — the
+		// proxy client cache is keyed only by proxy URL, with no room for a relay-mode dimension.
 		client, err = service.NewProxyHttpClient(info.ChannelSetting.Proxy)
 		if err != nil {
 			return nil, fmt.Errorf("new proxy http client failed: %w", err)
 		}
+	} else if constant.IsTextRelayMode(info.RelayMode) {
+		client = service.GetTextHttpClient()
 	} else {
 		client = service.GetHttpClient()
 	}

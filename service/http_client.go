@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -20,6 +21,9 @@ var (
 	ssrfProtectedHTTPClient *http.Client
 	proxyClientLock         sync.Mutex
 	proxyClients            = make(map[string]*http.Client)
+
+	textHttpClient        atomic.Pointer[http.Client]
+	textHttpClientTimeout atomic.Int64 // seconds the cached textHttpClient was built with
 )
 
 func checkRedirect(req *http.Request, via []*http.Request) error {
@@ -89,6 +93,36 @@ func InitHttpClient() {
 // ValidateSSRFProtectedFetchURL instead.
 func GetHttpClient() *http.Client {
 	return httpClient
+}
+
+// GetTextHttpClient returns a client bounded by common.TextRelayTimeout, for callers that have
+// already confirmed the request is a text-generation relay mode (relayconstant.IsTextRelayMode).
+// Falls back to GetHttpClient when the timeout is disabled (<= 0).
+//
+// common.TextRelayTimeout is DB-backed and can change at runtime (unlike common.RelayTimeout,
+// which is env-var/boot-only and baked into httpClient once at InitHttpClient). Since
+// http.Client.Timeout can't be re-read per-request, this lazily rebuilds and swaps the cached
+// client whenever the configured value changes, comparing on every call — cheap in the common
+// case (no lock, no rebuild) and self-healing without any option-update code needing to know
+// this cache exists. The rebuilt client reuses httpClient's Transport: Timeout is a whole-round-trip
+// watchdog, not a connection-pool property, so a second Transport/dialer would only waste
+// connections against hosts also serving non-text relay modes.
+func GetTextHttpClient() *http.Client {
+	if common.TextRelayTimeout <= 0 {
+		return GetHttpClient()
+	}
+	want := int64(common.TextRelayTimeout)
+	if cached := textHttpClient.Load(); cached != nil && textHttpClientTimeout.Load() == want {
+		return cached
+	}
+	client := &http.Client{
+		Transport:     httpClient.Transport,
+		Timeout:       time.Duration(want) * time.Second,
+		CheckRedirect: checkRedirect,
+	}
+	textHttpClient.Store(client)
+	textHttpClientTimeout.Store(want)
+	return client
 }
 
 // GetSSRFProtectedHTTPClient 返回带拨号时 SSRF 校验的客户端。

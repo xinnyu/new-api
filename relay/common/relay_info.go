@@ -356,6 +356,10 @@ func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {
 
 func GenRelayInfoClaude(c *gin.Context, request dto.Request) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
+	// Path2RelayMode has no case for /v1/messages, so RelayMode would otherwise stay
+	// RelayModeUnknown here (unlike GenRelayInfoRerank/GenRelayInfoResponses, which set it
+	// explicitly). Claude-native chat is text generation, so classify it as such.
+	info.RelayMode = relayconstant.RelayModeChatCompletions
 	info.RelayFormat = types.RelayFormatClaude
 	info.ShouldIncludeUsage = false
 	info.ClaudeConvertInfo = &ClaudeConvertInfo{

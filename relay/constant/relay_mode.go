@@ -148,3 +148,16 @@ func Path2RelaySuno(method, path string) int {
 	}
 	return relayMode
 }
+
+// IsTextRelayMode reports whether mode is a text-generation relay mode (chat completions and
+// the Responses API family). It deliberately excludes embeddings/moderations/rerank (fast,
+// non-generative) and image/audio/video/task/Midjourney/Suno/Gemini modes, which can legitimately
+// run for minutes and must stay unbounded. Used to scope TextRelayTimeout.
+func IsTextRelayMode(mode int) bool {
+	switch mode {
+	case RelayModeChatCompletions, RelayModeCompletions, RelayModeResponses, RelayModeResponsesCompact:
+		return true
+	default:
+		return false
+	}
+}

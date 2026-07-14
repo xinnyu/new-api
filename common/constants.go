@@ -185,6 +185,11 @@ var BatchUpdateInterval int
 
 var RelayTimeout int // unit is second
 
+// TextRelayTimeout bounds only text-generation relay modes (see relay/constant.IsTextRelayMode).
+// Unit is second; 0 = disabled. Unlike RelayTimeout (env-var/boot-only), this is DB-backed and
+// hot-reloadable via model/option.go's UpdateOption, matching RetryTimes' lifecycle.
+var TextRelayTimeout int
+
 var RelayIdleConnTimeout int // unit is second
 var RelayMaxIdleConns int
 var RelayMaxIdleConnsPerHost int
